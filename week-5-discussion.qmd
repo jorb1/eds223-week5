@@ -3,25 +3,64 @@ title: "Discussion Section"
 author: "BJ"
 format: html
 editor: visual
+editor_options: 
+  chunk_output_type: console
 ---
 
-## Quarto
-
-Quarto enables you to weave together content and executable code into a finished document. To learn more about Quarto see <https://quarto.org>.
-
-## Running Code
-
-When you click the **Render** button a document will be generated that includes both content and the output of embedded code. You can embed code like this:
-
 ```{r}
-1 + 1
+library(tidyverse)
+library(sf)
+library(terra)
+library(spData)
+library(spDataLarge)
 ```
 
-You can add options to executable code like this
 
 ```{r}
-#| echo: false
-2 * 2
+# Load raster data representing grain sizes
+grain <- terra::rast(system.file("raster/grain.tif", package = "spData"))
+
+grain
 ```
 
-The `echo: false` option disables the printing of code (only output is displayed).
+
+1. Subset points higher than 3100 meters in nz_height (from spData) and create a template raster with rast(), where the resolution is 3 km x 3 km for the extent of the subset dataset
+- Count numbers of the highest points in each grid cell
+- Find the maximum elevation in each grid cell
+
+```{r}
+nz_height3100 <- nz_height |>
+  dplyr::filter(elevation > 3100)
+
+# Create template: define the extent, resolution, and CRS based on nz_height3100
+nz_template <- rast(terra::ext(nz_height3100),
+                    resolution = 3000,
+                    crs = terra::crs(nz_height3100))
+```
+
+```{r}
+# Convert vector points to raster data
+# Function "length" returns a count of the elevation points per cell
+nz_raster <- rasterize(nz_height3100, nz_template, field = "elevation", fun = "length")
+
+plot(nz_raster, main = "Number of Elevation Points > 3100 in Each Grid Cell")
+plot(st_geometry(nz_height3100), add = TRUE)
+```
+
+```{r}
+# function max returns maximum elevation value per cell
+nz_raster2 <- rasterize(nz_height3100, nz_template, field = "elevation", fun = max)
+
+plot(nz_raster2, main = "Maximum Elevation in Each Grid Cell")
+plot(st_geometry(nz_height3100), add = TRUE)
+```
+
+
+
+
+
+
+
+
+
+
